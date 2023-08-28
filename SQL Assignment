@@ -33,14 +33,18 @@ def read_from_xl(carplate,confidence,detected, lane):#check and read from excel
         if str(DF[DF.eq(carplate).any(axis = 1)].iat[0, 0]) == 'nan':
             text = DF[DF.eq(carplate).any(axis=1)].iat[0, 2]
         else:
-            name = DF[DF.eq(carplate).any(axis = 1)].iat[0, 0]+ ',' +DF[DF.eq(carplate).any(axis = 1)].iat[0, 1]+ ',' +DF[DF.eq(carplate).any(axis = 1)].iat[0, 2]+ ',' +DF[DF.eq(carplate).any(axis = 1)].iat[0, 3]
-            N = re.split(r"[,/;]|and", name)
-            year = DF[DF.eq(carplate).any(axis = 1)].iat[0, 4]+ ',' + DF[DF.eq(carplate).any(axis = 1)].iat[0, 5]+ ',' +DF[DF.eq(carplate).any(axis = 1)].iat[0, 6]+ ',' +DF[DF.eq(carplate).any(axis = 1)].iat[0, 7]
-            N += year.split(",")
             text = ""
-            for i in range(int(len(N) / 2)):
-                text += (N[i] + "," + N[i + int(len(N) / 2)] + lane + 'lane' + ";")
-            print("text is",text)
+            for i in range (4):
+               name = DF[DF.eq(carplate).any(1)].iat[0, i]
+               year = DF[DF.eq(carplate).any(1)].iat[0, i+4]
+
+               if name == " " or year == " ":
+                   continue
+                
+                text += name + "," + year + ";" 
+            
+        print (text)
+        speech(text)
         txt=''.join(text)
         print("txt is",txt)
         if txt not in detected:
