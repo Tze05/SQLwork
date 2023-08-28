@@ -1,18 +1,78 @@
-*Write an SQL query to get the second highest salary from an Employee table. 
-For example, given the Employee table below, the query should return 200 as the second highest salary. 
-If there is no second highest salary, then the query should return null.*
-
-SELECT MAX(Salary) AS SecondHighestSalary
-FROM Employee
-WHERE Salary < (
-    SELECT MAX(Salary)
-    FROM Employee
-);
+import re
+import os
+from gtts import gTTS
+import pandas as pd
+from playsound import playsound
+import random
+import app as web
+from time import sleep
 
 
-*Write an SQL query to find all duplicate emails in a table named Person.*
+def read_from_xl(carplate,confidence,detected, lane):#check and read from excel
+    global DF, DATA
+    DATA = pd.read_excel(r"C:/Users/Administrator/Desktop/ANPR-main/ANPR/Copy of Vehicle Registration 2022_23 (Responses) (2).xlsx")
+    DF = pd.DataFrame(DATA, columns=['Child 1','Child 2','Child 3','Child 4',
+                                    'Select the year group your child(1) is in','Select the year group your child(2) is in',
+                                    'Select the year group your child(3) is in','Select the year group your child(4) is in',
+                                    'Staff Full Name',
+                                    'Vehicle Registration Number 1 (Car Plate)',
+                                    'Vehicle Registration Number 2 (Car Plate)',
+                                    'Vehicle Registration Number 3 (Car Plate)',
+                                    'Vehicle Registration Number 1 (Additional)',
+                                    'Vehicle Registration Number 2 (Additional)',
+                                    'Vehicle Registration Number 3(Additional)'])
+    for i in range(1, 4):
+        DF[f'Vehicle Registration Number {i} (Car Plate)'] = DF[f'Vehicle Registration Number {i} (Car Plate)'].str.replace(
+            " ", "")
+        DF[f'Vehicle Registration Number {i} (Additional)'] = DF[f'SVehicle Registration Number {i} (Car Plate)'].str.replace(
+            " ", "")
+        
+    success=False
+    carplate = carplate.replace(" ", "")
+    try:
+        if str(DF[DF.eq(carplate).any(axis = 1)].iat[0, 0]) == 'nan':
+            text = DF[DF.eq(carplate).any(axis=1)].iat[0, 2]
+        else:
+            name = DF[DF.eq(carplate).any(axis = 1)].iat[0, 0]+ ',' +DF[DF.eq(carplate).any(axis = 1)].iat[0, 1]+ ',' +DF[DF.eq(carplate).any(axis = 1)].iat[0, 2]+ ',' +DF[DF.eq(carplate).any(axis = 1)].iat[0, 3]
+            N = re.split(r"[,/;]|and", name)
+            year = DF[DF.eq(carplate).any(axis = 1)].iat[0, 4]+ ',' + DF[DF.eq(carplate).any(axis = 1)].iat[0, 5]+ ',' +DF[DF.eq(carplate).any(axis = 1)].iat[0, 6]+ ',' +DF[DF.eq(carplate).any(axis = 1)].iat[0, 7]
+            N += year.split(",")
+            text = ""
+            for i in range(int(len(N) / 2)):
+                text += (N[i] + "," + N[i + int(len(N) / 2)] + lane + 'lane' + ";")
+            print("text is",text)
+        txt=''.join(text)
+        print("txt is",txt)
+        if txt not in detected:
+            success = True
+            #Repeat the name twice so student can hear
+            #speech(txt,success)
+            audio_file=speech(txt,success,lane)
+            web.get_sound_file(audio_file)
+            sleep(3)
+            web.get_sound_file(None)
+    except IndexError:
+        text = f"CarPlate Unregistered"
+        success = False
+        if confidence>=0.7:
+            audio_file=speech(carplate,success, lane)
+            web.get_sound_file(audio_file)
+            sleep(3)
+            web.get_sound_file(None)
+    return text, success
 
-SELECT Email, COUNT(*) AS DuplicateCount
-FROM Person
-GROUP BY Email
-HAVING COUNT(*) > 1;
+# print(DF['Staff Full Name'].where(DF['SVehicle Registration Number 1 (Car Plate)'] == "WXU2430"))
+def speech(string,succeed,lane):
+    try:
+        if not succeed:
+            string = ' '.join(list(string))
+        tts = gTTS(text=string+', '+lane+' lane', lang='en', tld="us", slow=False)  # Least Error tld="us"
+        r = random.randint(1, 10000000)
+        audio_file = 'audio-' + str(r) + '.mp3'
+        path = os.path.join('static/'+audio_file)
+        tts.save(path)
+        playsound(path)
+        return '../'+path
+    except:
+        print("No CarPlate")
+        return None
